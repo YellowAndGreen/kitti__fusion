@@ -1,4 +1,4 @@
-# kitti__fusion
+# kitti_fusion
 
 Fuse the image segment results and the pointcloud
 
