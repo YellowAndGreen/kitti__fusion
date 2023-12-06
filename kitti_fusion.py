@@ -71,9 +71,8 @@ def load_point(all_para,file='./000011.bin'):
     # 将强度维度变为0
     points[3,:]=0
     # 去除地面点云
-    # points=remove_ground_ransac(points,all_para)
-
-    # logger.info(f'去除地面点之后的点云shape:{points.shape}')
+    points=remove_ground(points,all_para)
+    logger.info(f'去除地面点之后的点云shape:{points.shape}')
     return points
 
 
@@ -122,10 +121,7 @@ def cam2velo(points,calib_file="000011_calib.txt"):
     R0 = np.insert(R0,3,values=[0,0,0,1],axis=1)
     Tr_velo_to_cam = np.fromstring(calib_txt[5], dtype=np.float32, sep=" ").reshape((3,4))
     Tr_velo_to_cam = np.insert(Tr_velo_to_cam,3,values=[0,0,0,1],axis=0)
-    # logger.info(pinv(points).shape)
-    # logger.info(P2 @ R0 @ Tr_velo_to_cam.shape)
     velo = pinv(points)@P2 @ R0 @ Tr_velo_to_cam   # [3, n]
-
     return pinv(velo)
 
 
@@ -199,12 +195,6 @@ def export_pcd(points,out_path="./pointcloud2.pcd"):
     pcd = o3d.t.geometry.PointCloud()
     pcd.point["positions"] = o3d.core.Tensor(xyz)
     pcd.point["intensities"] = o3d.core.Tensor(i)
-
-    # plane_model, inliers = pcd.segment_plane(distance_threshold=0.3,
-    #                                          ransac_n=5,
-    #                                          num_iterations=100)
-    # o3d.t.io.write_point_cloud(out_path, pcd.select_by_index(inliers,invert=True), write_ascii=True)
-
     o3d.t.io.write_point_cloud(out_path, pcd, write_ascii=True)
     logger.info(f"已导出点云pcd文件到：{out_path}")
 
@@ -237,9 +227,6 @@ def load_gt_labels(points, label_path="./label_2/000011.txt"):
             # logger.info(f"去掉不在边界内的点")
             continue
         # 转换xyz坐标系
-        # tp = cam2velo(np.array(rect[0:3]).reshape(3,1)).reshape(4)
-        # tp[:3] /= tp[3]
-        # rect[0:3]= tp[:3].tolist()
         if label_txt[i][0]=="Pedestrian":
             pedes.append(rect)
         elif label_txt[i][0]=="Car" or label_txt[i][0]=="Truck" or label_txt[i][0]=="Van":
